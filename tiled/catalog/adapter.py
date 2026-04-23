@@ -260,11 +260,13 @@ class Context:
                 self.cache_config["datastore"] = "memory"
             self.streaming_cache = StreamingCache(self.cache_config)
 
-        self.webhook_dispatcher = WebhookDispatcher(
-            self.session,
-            secret_keys=self.webhook_secret_keys,
-        )
-        await self.webhook_dispatcher.startup()
+        self.webhook_dispatcher = None
+        if self.webhook_secret_keys is not None:
+            self.webhook_dispatcher = WebhookDispatcher(
+                self.session,
+                secret_keys=self.webhook_secret_keys,
+            )
+            await self.webhook_dispatcher.startup()
 
     async def shutdown(self):
         if self.webhook_dispatcher is not None:
@@ -1893,6 +1895,7 @@ def from_uri(
     top_level_access_blob=None,
     mount_node: Optional[Union[str, List[str]]] = None,
     cache_config=None,
+    webhook_secret_keys: Optional[List[str]] = None,
     catalog_pool_size=5,
     storage_pool_size=5,
     catalog_max_overflow=10,
@@ -1934,6 +1937,7 @@ def from_uri(
         cache_config,
         storage_pool_size=storage_pool_size,
         storage_max_overflow=storage_max_overflow,
+        webhook_secret_keys=webhook_secret_keys,
     )
     node = RootNode(metadata, specs, top_level_access_blob)
     mount_path = (

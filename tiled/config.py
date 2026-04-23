@@ -238,6 +238,25 @@ class StreamingCacheConfig(BaseSettings):
     settings_customise_sources = classmethod(settings_customise_sources)
 
 
+class WebhooksConfig(BaseModel):
+    """Configuration for the optional webhooks feature.
+
+    When this section is present in the server configuration, the
+    ``/api/v1/webhooks`` router is mounted and the WebhookDispatcher is
+    started alongside the catalog.  When absent, webhooks are fully disabled.
+
+    Parameters
+    ----------
+    secret_keys : list of str, optional
+        Keys used to encrypt webhook HMAC signing secrets at rest.
+        Must be non-empty if users will register webhooks with secrets.
+        Supports key rotation: the first key is used for encryption; all
+        keys are tried during decryption.
+    """
+
+    secret_keys: list[str] = []
+
+
 class Config(BaseSettings):
     catalog: Optional[CatalogConfig] = None  # recommended
     trees: Optional[list[TreeSpec]] = None  # advanced alternative
@@ -257,6 +276,7 @@ class Config(BaseSettings):
     expose_raw_assets: bool = True
     routers: list[EntryPointString] = []
     streaming_cache: Optional[StreamingCacheConfig] = None
+    webhooks: Optional[WebhooksConfig] = None
 
     # If recommended 'catalog' config is used, these parameters are
     # not used; they are set inside the CatalogConfig.
@@ -357,6 +377,9 @@ class Config(BaseSettings):
                 tree.args["cache_config"] = (
                     self.streaming_cache.model_dump() if self.streaming_cache else None
                 )
+                tree.args["webhook_secret_keys"] = (
+                    list(self.webhooks.secret_keys) if self.webhooks else None
+                )
         return self
 
     @property
@@ -455,6 +478,7 @@ def construct_build_app_kwargs(config: Config):
         reject_undeclared_specs=config.reject_undeclared_specs,
         expose_raw_assets=config.expose_raw_assets,
         metrics=config.metrics,
+        webhooks=config.webhooks,
     )
     return dict(
         tree=config.merged_trees,
