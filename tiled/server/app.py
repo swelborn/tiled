@@ -99,7 +99,8 @@ def custom_openapi(app):
     from .. import __version__
 
     if app.openapi_schema:
-        return app.openapi_schema
+        if "servers" in app.openapi_schema:
+            return app.openapi_schema
     # Customize heading.
     openapi_schema = get_openapi(
         title="Tiled",
@@ -111,6 +112,7 @@ def custom_openapi(app):
     openapi_schema["components"]["securitySchemes"]["OAuth2PasswordBearer"]["flows"][
         "password"
     ]["refreshUrl"] = "token/refresh"
+    openapi_schema["servers"] = [{"url": "/tiled-test"}]
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
@@ -254,7 +256,14 @@ def build_app(
         finally:
             await shutdown_event()
 
-    app = FastAPI(lifespan=lifespan, strict_content_type=False)
+    app = FastAPI(lifespan=lifespan, strict_content_type=False,
+                  root_path="/tiled-test",
+                  root_path_in_servers=True,
+                  servers=[
+                      {"url": "/tiled-test", "description": "behind k8s path prefix ingress"},
+                      {"url": "http://localhost:8000", "description": "Local development"}
+                  ]
+                )
 
     # Healthcheck for deployment to containerized systems, needs to preempt other responses.
     # Standardized for Kubernetes, but also used by other systems.

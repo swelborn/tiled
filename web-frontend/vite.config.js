@@ -11,7 +11,7 @@ if (!global.crypto) {
 }
 
 export default defineConfig({
-  base: "/ui/",
+  base: "/tiled-test/ui/",
   server: {
     proxy: {
       "/api": {
