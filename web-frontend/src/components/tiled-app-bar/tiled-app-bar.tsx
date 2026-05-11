@@ -10,7 +10,7 @@ import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import { useAuth } from "../../auth/auth-context";
 import { tokenManager } from "../../auth/token-manager";
-import { axiosInstance } from "../../client";
+import { axiosInstance, defaultApiUrl } from "../../client";
 
 const TiledAppBar = () => {
   const { isAuthenticated, identity, authRequired, onLogout } = useAuth();
@@ -22,7 +22,7 @@ const TiledAppBar = () => {
     const refreshToken = tokenManager.getRefreshToken();
     if (refreshToken) {
       try {
-        await axiosInstance.post("/api/v1/auth/session/revoke", {
+        await axiosInstance.post(`${defaultApiUrl}/auth/session/revoke`, {
           refresh_token: refreshToken,
         });
       } catch {

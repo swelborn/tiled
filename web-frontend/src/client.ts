@@ -3,6 +3,17 @@ import { components } from "./openapi_schemas";
 
 export const axiosInstance = axios.create();
 
+// This is set in vite.config.js. It is the base path of the UI.
+// For example, /ui/ maps to /api/v1 and /tiled-test/ui/ maps to
+// /tiled-test/api/v1.
+const basename = import.meta.env.BASE_URL;
+const rootPath = basename.split("/").slice(0, -2).join("/");
+export const defaultApiUrl = `${rootPath}/api/v1`;
+
+function joinUrl(baseUrl: string, path: string): string {
+  return `${baseUrl.replace(/\/$/, "")}${path}`;
+}
+
 // Transform absolute URLs in "links" fields to relative paths so the UI
 // works regardless of the origin the server reports.
 function toRelativePath(urlString: string): string {
@@ -94,7 +105,9 @@ export const metadata = async (
   return response.data;
 };
 
-export const about = async (): Promise<components["schemas"]["About"]> => {
-  const response = await axiosInstance.get("/api/v1/");
+export const about = async (
+  apiURL: string = defaultApiUrl,
+): Promise<components["schemas"]["About"]> => {
+  const response = await axiosInstance.get(joinUrl(apiURL, "/"));
   return response.data;
 };

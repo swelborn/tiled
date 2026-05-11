@@ -1,9 +1,10 @@
 # syntax=docker/dockerfile:1.9
 ARG PYTHON_VERSION=3.12
 FROM --platform=linux/amd64 docker.io/node:22-alpine AS web_frontend_build
+ARG TILED_BUILD_PUBLIC_PATH=/tiled-test/ui/
 WORKDIR /src
 COPY web-frontend .
-RUN set -ex && npm install && npm run build
+RUN set -ex && npm install && npm run build -- --base=${TILED_BUILD_PUBLIC_PATH}
 
 ##########################################################################
 
