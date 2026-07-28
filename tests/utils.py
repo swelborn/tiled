@@ -27,6 +27,24 @@ def fail_with_status_code(status_code):
     assert info.value.response.status_code == status_code
 
 
+def mount_at_root_path(app, root_path: str):
+    """Wrap an ASGI app the way uvicorn's --root-path does.
+
+    uvicorn PREPENDS root_path to the request path; httpx's ASGITransport does not.
+    """
+
+    async def wrapped(scope, receive, send):
+        if scope["type"] == "http":
+            scope = dict(scope)
+            scope["root_path"] = root_path
+            scope["path"] = root_path + scope["path"]
+            if scope.get("raw_path") is not None:
+                scope["raw_path"] = root_path.encode() + scope["raw_path"]
+        await app(scope, receive, send)
+
+    return wrapped
+
+
 @contextlib.asynccontextmanager
 async def temp_postgres(uri):
     if uri.endswith("/"):
