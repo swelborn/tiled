@@ -1,9 +1,14 @@
-const basename = import.meta.env.BASE_URL;
+// The server rewrites index.html's <base> to the prefix it serves under,
+// e.g. "/tenant/tiled/ui/".
+const DEFAULT_UI_BASE_PATH = "/ui";
 
-const tiledUISettingsURL =
-  basename.split("/").slice(0, -2).join("/") + "/tiled-ui-settings";
-// Alternate idea
-// const tiledUISettingsURL = import.meta.env.TILED_UI_SETTINGS || "/tiled-ui-settings";
+const uiBasePath = document.querySelector("base")
+  ? new URL(document.baseURI).pathname.replace(/\/$/, "")
+  : DEFAULT_UI_BASE_PATH;
+const rootPath = uiBasePath.replace(/\/ui$/, "");
+const bootstrapApiUrl = `${rootPath}/api/v1`;
+
+const tiledUISettingsURL = `${rootPath}/tiled-ui-settings`;
 
 interface Column {
   header: string;
@@ -34,5 +39,5 @@ const fetchSettings = async (signal: AbortSignal): Promise<Settings> => {
   return (await response.json()) as Settings;
 };
 
-export { fetchSettings };
+export { fetchSettings, bootstrapApiUrl, rootPath, uiBasePath };
 export type { Settings };

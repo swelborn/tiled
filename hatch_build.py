@@ -31,6 +31,13 @@ class CustomHook(BuildHookInterface):
                 file=sys.stderr,
             )
             return
+        if os.getenv("TILED_BUILD_PUBLIC_PATH"):
+            print(
+                "TILED_BUILD_PUBLIC_PATH is ignored. The web UI's base path is "
+                "now resolved at runtime from the server's root_path; set "
+                "uvicorn.root_path in the server configuration instead.",
+                file=sys.stderr,
+            )
         npm_path = shutil.which("npm")
         if npm_path is None:
             print(
@@ -44,16 +51,7 @@ class CustomHook(BuildHookInterface):
         )
         try:
             subprocess.check_call([npm_path, "install"], cwd="web-frontend")
-            subprocess.check_call(
-                [
-                    npm_path,
-                    "run",
-                    "build",
-                    "--",
-                    f"--base={os.environ.get('TILED_BUILD_PUBLIC_PATH', '/ui/')}",
-                ],
-                cwd="web-frontend",
-            )
+            subprocess.check_call([npm_path, "run", "build"], cwd="web-frontend")
             if Path(artifact_path).exists():
                 shutil.rmtree(artifact_path)
             shutil.copytree("web-frontend/dist", artifact_path)
