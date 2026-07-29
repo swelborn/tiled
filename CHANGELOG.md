@@ -5,11 +5,17 @@ Write the date in place of the "Unreleased" in the case a new version is release
 
 ## Unreleased
 
-- Add client_secret,redirect_on_success,redirect_on_failure to ProxiedOIDCAuthenticator. This is to allow login using Tiled-UI
-- Allow configuration of user_id_claim for OIDCAuthenticator
-
 ### Fixed
 
+- The OIDC `redirect_uri` was prefixed with `root_path` twice when Tiled was
+  served behind a proxy on a path prefix, because `root_path` is present in
+  both `get_root_url()` and `request.url.path`.
+- The landing page's link to the web UI ignored `root_path`.
+- `/tiled-ui-settings` reported an `api_url` that ignored the `root_path`
+  reported by the ASGI server, and unconditionally prefixed `api_url` values
+  that were already absolute URLs.
+- A `root_path` written without a leading slash (`tiled` rather than `/tiled`)
+  silently produced malformed URLs.
 - Fix the webhook `history` and `delete` endpoints when a catalog is mounted under
   a sub-path (the `trees:` config form).
 - Skip the `array-ref` streaming-cache update in `put_data_source` when the
