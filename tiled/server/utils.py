@@ -18,6 +18,26 @@ API_KEY_QUERY_PARAMETER = "api_key"
 CSRF_COOKIE_NAME = "tiled_csrf"
 
 
+def normalize_root_path(root_path: Optional[str]) -> str:
+    """Coerce a root_path to "" or "/prefix" (no trailing slash)."""
+    stripped = (root_path or "").strip("/")
+    return f"/{stripped}" if stripped else ""
+
+
+def strip_root_path(path: str, root_path: str) -> str:
+    """Remove root_path from path, only on a path-segment boundary.
+
+    Mirrors Starlette's own route-path resolution.
+    """
+    if not root_path or not path.startswith(root_path):
+        return path
+    offset = len(root_path)
+    remainder = path[offset:]
+    if remainder and not remainder.startswith("/"):
+        return path
+    return remainder
+
+
 @contextlib.contextmanager
 def record_timing(metrics: dict[str, Any], key: str) -> Generator[None]:
     """
@@ -50,6 +70,16 @@ def get_base_url(request: Request) -> str:
     return f"{get_root_url(request)}/api/v1"
 
 
+def get_current_url(request: Request) -> str:
+    """
+    Externally-visible URL of this request, without query params.
+    Both ``get_root_url`` and ``request.url.path`` include ``root_path``.
+    """
+    root_path = normalize_root_path(request.scope.get("root_path"))
+    path = strip_root_path(request.url.path, root_path)
+    return f"{get_root_url(request)}{path}"
+
+
 def get_zarr_url(request, version: Literal["v2", "v3"] = "v2"):
     """
     Base URL for the Zarr API
@@ -79,9 +109,7 @@ def get_root_url_low_level(request_headers: Mapping[str, str], scope: Scope) -> 
     #   https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.23
     host = request_headers.get("x-forwarded-host", request_headers["host"])
     scheme = request_headers.get("x-forwarded-proto", scope["scheme"])
-    root_path = scope.get("root_path", "")
-    if root_path.endswith("/"):
-        root_path = root_path[:-1]
+    root_path = normalize_root_path(scope.get("root_path"))
     return f"{scheme}://{host}{root_path}"
 
 
