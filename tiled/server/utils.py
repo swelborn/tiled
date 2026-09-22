@@ -18,6 +18,12 @@ API_KEY_QUERY_PARAMETER = "api_key"
 CSRF_COOKIE_NAME = "tiled_csrf"
 
 
+def normalize_root_path(root_path: Optional[str]) -> str:
+    """Coerce a root_path to "" or "/prefix" (no trailing slash)."""
+    stripped = (root_path or "").strip("/")
+    return f"/{stripped}" if stripped else ""
+
+
 @contextlib.contextmanager
 def record_timing(metrics: dict[str, Any], key: str) -> Generator[None]:
     """
@@ -77,12 +83,18 @@ def get_root_url_low_level(request_headers: Mapping[str, str], scope: Scope) -> 
     #   The HTTP spec specifies that the Host header may include a port
     #   to specify a non-default port.
     #   https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.23
+    root_path = normalize_root_path(scope.get("root_path"))
+    return f"{_get_origin(request_headers, scope)}{root_path}"
+
+
+def _get_origin(request_headers: Mapping[str, str], scope: Scope) -> str:
+    """
+    Scheme and host as they appear to the client, without any root_path.
+    See get_root_url_low_level for why the X-Forwarded-* headers are consulted.
+    """
     host = request_headers.get("x-forwarded-host", request_headers["host"])
     scheme = request_headers.get("x-forwarded-proto", scope["scheme"])
-    root_path = scope.get("root_path", "")
-    if root_path.endswith("/"):
-        root_path = root_path[:-1]
-    return f"{scheme}://{host}{root_path}"
+    return f"{scheme}://{host}"
 
 
 async def filter_for_access(
